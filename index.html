@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Arena Heroes | NH Trade Empire</title>
+<style>
+:root{--gold:#ffd76a;--red:#a91525;--panel:#101a2a;--line:#49617b}
+*{box-sizing:border-box}body{margin:0;background:#07111f;color:#f4f6fa;font-family:system-ui,Arial,sans-serif;overflow-x:hidden}
+header{padding:13px 16px;background:linear-gradient(110deg,#700d1c,#152c49);border-bottom:2px solid var(--gold);display:flex;justify-content:space-between;align-items:center;gap:8px}
+h1{font-size:clamp(18px,4vw,28px);margin:0;letter-spacing:1px}header small{color:#ffe7a4}
+button,input{font:inherit}button{border:1px solid #6b829b;border-radius:10px;padding:9px 12px;background:#203954;color:white;font-weight:700;cursor:pointer}button:active{transform:scale(.97)}button.primary{background:linear-gradient(120deg,#a91525,#e34b37);border-color:#ff9d7b}
+button:disabled{opacity:.35;cursor:not-allowed}
+.wrap{max-width:1200px;margin:auto;padding:12px;display:grid;grid-template-columns:1fr 300px;gap:12px}
+.card{background:linear-gradient(145deg,#14243a,#0c1727);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:0 8px 25px #0005}
+#gameCanvas{display:block;width:100%;height:auto;aspect-ratio:16/9;background:#14263b;border-radius:10px;border:1px solid #67819a;touch-action:none}
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}.pill{background:#263b54;border-radius:20px;padding:5px 10px;font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1}
+h2{font-size:17px;margin:4px 0 10px;color:var(--gold)}p{line-height:1.45}
+#heroGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.hero{min-height:82px;text-align:left;background:#172b43;border:1px solid #3f5d7b;padding:8px}
+.hero.active{border:2px solid var(--gold);background:#3b2c29}
+.hero b{display:block;font-size:13px}.hero span{font-size:11px;color:#c3d0df}
+#log{height:120px;overflow:auto;background:#07111d;padding:8px;border-radius:8px;font-size:12px;color:#cbd8e7}
+.controls{display:grid;grid-template-columns:repeat(3,58px);gap:6px;justify-content:center;margin-top:10px}
+.controls button{height:48px;font-size:18px;touch-action:none}
+.skillrow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:9px}
+.skillrow button{font-size:11px;padding:8px 3px;min-height:54px}
+#startScreen{position:fixed;inset:0;background:radial-gradient(circle at 50% 20%,#294e70,#07111f 65%);z-index:10;display:grid;place-items:center;padding:18px}
+.startbox{max-width:480px;width:100%;text-align:center}.startbox input{width:100%;padding:13px;margin:6px 0;border-radius:9px;border:1px solid #71869b;background:#0c1928;color:white}
+.note{font-size:12px;color:#aebed0}.hidden{display:none!important}.bar{height:9px;background:#33465b;border-radius:8px;overflow:hidden;margin:5px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,#32c56a,#a7f06e);width:100%}
+@media(max-width:800px){.wrap{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr;gap:10px}.side .wide{grid-column:1/-1}#heroGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:430px){.side{grid-template-columns:1fr}.side .wide{grid-column:auto}#heroGrid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<header><div><h1>⚔ ARENA HEROES</h1><small>BY NH TRADE EMPIRE · MALAYSIA 🇲🇾</small></div><button id="soundBtn">🔊 Bunyi: ON</button></header>
+<div id="startScreen"><div class="card startbox"><div style="font-size:48px">🛡️⚔️</div><h1>ARENA HEROES</h1><p>Masuki dunia pengembaraan. Pilih wira, jelajah arena dan tewaskan raksasa!</p>
+<input id="playerName" maxlength="16" placeholder="Nama pemain" autocomplete="nickname">
+<input id="playerPhone" maxlength="20" inputmode="tel" placeholder="Nombor telefon (peribadi, tidak dipaparkan)">
+<button class="primary" style="width:100%;padding:14px" id="startBtn">MULA BERMAIN</button>
+<p class="note">Tiada kata laluan. Nama dan kemajuan disimpan pada peranti ini sahaja. Nombor telefon tidak dihantar ke pelayan.</p></div></div>
+<div class="wrap" id="main" style="display:none">
+<main class="card">
+<div class="stats"><span class="pill" id="playerTag">Pemain</span><span class="pill" id="levelTag">Level 1</span><span class="pill" id="xpTag">XP 0/50</span><span class="pill" id="coinTag">🪙 0</span></div>
+<canvas id="gameCanvas" width="960" height="540"></canvas>
+<div class="row" style="margin-top:9px"><button id="questBtn">📜 Misi</button><button id="healBtn">❤️ Pulih 20 HP (10 syiling)</button><button id="saveBtn">💾 Simpan</button><button id="resetBtn">↻ Reset</button></div>
+<div class="controls" aria-label="Kawalan pergerakan"><span></span><button data-move="up">▲</button><span></span><button data-move="left">◀</button><button data-move="down">▼</button><button data-move="right">▶</button></div>
+<div class="skillrow"><button id="skill1">Skill 1</button><button id="skill2">Skill 2</button><button id="skill3">Skill 3</button><button id="ultimate">ULTIMATE</button></div>
+<p class="note">PC: WASD / anak panah untuk bergerak · Space untuk serang · 1, 2, 3 dan 4 untuk skill. Telefon: guna pad arah dan butang skill.</p>
+</main>
+<aside class="side">
+<section class="card wide"><h2>Pilih Wira · Semua Percuma</h2><div id="heroGrid"></div></section>
+<section class="card"><h2>Status Wira</h2><b id="heroName">Hang Tuah</b><p id="heroDesc" class="note"></p><div>❤️ HP <span id="hpText"></span><div class="bar"><i id="hpBar"></i></div></div><div>⚡ Tenaga <span id="energyText"></span><div class="bar"><i id="energyBar" style="background:#62b9ff"></i></div></div><p id="heroStats" class="note"></p></section>
+<section class="card"><h2>Misi Semasa</h2><p id="questText">Kalahkan 3 raksasa di arena.</p><p id="questProgress" class="note">0/3</p><h2>Log Arena</h2><div id="log"></div></section>
+</aside></div>
+<script>
+(()=>{
+const heroes=[
+{name:"Rider Nova",emoji:"🏍️",role:"Wira berperisai pantas",desc:"Pejuang bertopeng original dengan kuasa enjin bintang.",skills:["Pecut Nova","Tebasan Gear","Perisai Turbo","Rider Meteor"],dmg:[13,18,8,42],color:"#e34b37"},
+{name:"Titan Cahaya",emoji:"🌟",role:"Penjaga gergasi cahaya",desc:"Penjaga cahaya yang menembak tenaga kosmik.",skills:["Sinar Suria","Gelombang Cahaya","Perisai Photon","Cahaya Zenith"],dmg:[18,15,10,48],color:"#65c9ff"},
+{name:"Hang Tuah",emoji:"🗡️",role:"Pendekar keris legenda",desc:"Pakar keris, seimbang dalam serangan dan pertahanan.",skills:["Keris Taming Sari","Langkah Laksamana","Benteng Setia","Sembilan Tebasan"],dmg:[19,13,12,45],color:"#e5bd65"},
+{name:"Hang Jebat",emoji:"🔥",role:"Pendekar serangan agresif",desc:"Serangan bertubi-tubi dengan semangat yang membara.",skills:["Amukan Jebat","Pukulan Bara","Tekad Membara","Amukan Pahlawan"],dmg:[22,18,0,50],color:"#ef7449"},
+{name:"Hang Kasturi",emoji:"🌪️",role:"Pendekar pantas",desc:"Gerakan bayangan dan serangan yang sukar dijangka.",skills:["Bayang Pantas","Tusukan Kilat","Elak Sempurna","Ribut Kasturi"],dmg:[15,20,0,44],color:"#a8d8e8"},
+{name:"Hang Lekir",emoji:"🛡️",role:"Benteng pertahanan",desc:"Pertahanan kukuh untuk bertahan dalam pertempuran.",skills:["Benteng Pendekar","Tangkis Besi","Pulih Semangat","Benteng Lima Sahabat"],dmg:[10,12,14,36],color:"#85b79b"},
+{name:"Hang Lekiu",emoji:"⚔️",role:"Pakar senjata berkembar",desc:"Dua bilah senjata untuk serangan sederhana dan pantas.",skills:["Tebasan Berkembar","Putaran Bilah","Langkah Sisi","Serangan Kembar Agung"],dmg:[18,19,0,46],color:"#c1a3ed"},
+{name:"Badang",emoji:"💪",role:"Wira tenaga luar biasa",desc:"Kekuatan fizikal hebat dengan hentaman yang berat.",skills:["Tenaga Gergasi","Hentaman Bumi","Kulit Waja","Pukulan Badang"],dmg:[25,28,0,58],color:"#e5a75c"},
+{name:"Mat Kilau",emoji:"🏹",role:"Pahlawan gerila",desc:"Pakar serangan mengejut dan taktik hutan.",skills:["Serangan Gerila","Panah Kilat","Kabut Hutan","Serangan Harimau"],dmg:[17,21,0,47],color:"#8ac17b"}
+];
+let state={name:"Pemain",level:1,xp:0,coins:0,hp:100,energy:100,kills:0,hero:2,x:480,y:270,monsters:[],quest:0};
+let selected=false, sound=true, keys={},last=0;
+const $=id=>document.getElementById(id), canvas=$("gameCanvas"),ctx=canvas.getContext("2d");
+function log(t){$("log").innerHTML=`<div>› ${t}</div>`+$("log").innerHTML}
+function save(){localStorage.setItem("arenaHeroesSave",JSON.stringify(state));log("Kemajuan disimpan pada peranti.");}
+function load(){try{let s=JSON.parse(localStorage.getItem("arenaHeroesSave"));if(s)state={...state,...s}}catch(e){}}
+function hero(){return heroes[state.hero]}
+function renderHeroes(){$("heroGrid").innerHTML=heroes.map((h,i)=>`<button class="hero ${i===state.hero?'active':''}" data-hero="${i}"><b>${h.emoji} ${h.name}</b><span>${h.role}</span></button>`).join("");document.querySelectorAll("[data-hero]").forEach(b=>b.onclick=()=>{state.hero=+b.dataset.hero;renderHeroes();updateUI();log("Wira dipilih: "+hero().name)})}
+function updateUI(){let h=hero();$("playerTag").textContent="👤 "+state.name;$("levelTag").textContent="Level "+state.level;$("xpTag").textContent=`XP ${state.xp}/${state.level*50}`;$("coinTag").textContent="🪙 "+state.coins;$("heroName").textContent=h.emoji+" "+h.name;$("heroDesc").textContent=h.desc;$("heroStats").textContent=h.role+" · Semua skill tersedia";$("hpText").textContent=state.hp+"/100";$("hpBar").style.width=state.hp+"%";$("energyText").textContent=state.energy+"/100";$("energyBar").style.width=state.energy+"%";["skill1","skill2","skill3","ultimate"].forEach((id,i)=>$(id).textContent=(i===3?"✦ ":"")+" "+h.skills[i]);$("questProgress").textContent=Math.min(state.kills,3)+"/3 raksasa dikalahkan";$("questText").textContent=state.kills>=3?"Misi selesai! Teruskan pengembaraan.":"Kalahkan 3 raksasa di arena."}
+function spawn(){if(state.monsters.length<5)state.monsters.push({x:70+Math.random()*820,y:65+Math.random()*410,hp:45,max:45,phase:Math.random()*6})}
+for(let i=0;i<4;i++)spawn();
+function draw(){ctx.clearRect(0,0,960,540);let g=ctx.createLinearGradient(0,0,0,540);g.addColorStop(0,"#1d4260");g.addColorStop(1,"#102235");ctx.fillStyle=g;ctx.fillRect(0,0,960,540);
+ctx.strokeStyle="#31516a";ctx.lineWidth=1;for(let x=0;x<960;x+=48){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,540);ctx.stroke()}for(let y=0;y<540;y+=48){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(960,y);ctx.stroke()}
+ctx.fillStyle="#d3b36b";ctx.fillRect(0,0,960,10);ctx.fillRect(0,530,960,10);ctx.fillRect(0,0,10,540);ctx.fillRect(950,0,10,540);
+state.monsters.forEach(m=>{ctx.font="36px sans-serif";ctx.textAlign="center";ctx.fillText("👹",m.x,m.y);ctx.fillStyle="#24151b";ctx.fillRect(m.x-22,m.y+7,44,5);ctx.fillStyle="#ed5555";ctx.fillRect(m.x-22,m.y+7,44*m.hp/m.max,5)});
+ctx.textAlign="center";ctx.font="40px sans-serif";ctx.fillText(hero().emoji,state.x,state.y);ctx.font="13px sans-serif";ctx.fillStyle="white";ctx.fillText(state.name,state.x,state.y-30);
+ctx.fillStyle="#f5d98d";ctx.font="14px sans-serif";ctx.fillText("ARENA · HUTAN PAHLAWAN",480,30);
+}
+function attack(dmg,kind){if(state.energy<8){log("Tenaga tidak cukup. Tunggu tenaga pulih.");return}state.energy=Math.max(0,state.energy-8);let target=state.monsters.sort((a,b)=>Math.hypot(a.x-state.x,a.y-state.y)-Math.hypot(b.x-state.x,b.y-state.y))[0];if(!target||Math.hypot(target.x-state.x,target.y-state.y)>155){log("Tiada raksasa berdekatan. Bergerak menghampiri musuh.");updateUI();return}target.hp-=dmg;log(`${kind}: ${dmg} kerosakan!`);if(target.hp<=0){state.monsters=state.monsters.filter(m=>m!==target);state.kills++;state.xp+=25;state.coins+=8;log("Raksasa ditewaskan! +25 XP, +8 syiling.");if(state.xp>=state.level*50){state.xp-=state.level*50;state.level++;state.hp=100;log("NAIK LEVEL! Kini Level "+state.level)}spawn()}updateUI()}
+function skill(i){let h=hero();let cost=i===3?35:15;if(state.energy<cost){log("Tenaga tidak cukup untuk "+h.skills[i]);return}state.energy-=cost;let target=state.monsters.sort((a,b)=>Math.hypot(a.x-state.x,a.y-state.y)-Math.hypot(b.x-state.x,b.y-state.y))[0];if(i===2&&h.dmg[i]===0){state.hp=Math.min(100,state.hp+25);log(h.skills[i]+": HP pulih 25!")}else if(target&&Math.hypot(target.x-state.x,target.y-state.y)<210){target.hp-=h.dmg[i];log(h.skills[i]+" digunakan! "+h.dmg[i]+" kerosakan.");if(target.hp<=0){state.monsters=state.monsters.filter(m=>m!==target);state.kills++;state.xp+=25;state.coins+=8;log("Raksasa tewas! Ganjaran diterima.");if(state.xp>=state.level*50){state.xp-=state.level*50;state.level++;state.hp=100;log("Naik ke Level "+state.level)}spawn()}}else{state.energy=Math.min(100,state.energy+cost);log("Tiada musuh dalam jarak skill.")}updateUI()}
+function move(dx,dy){state.x=Math.max(30,Math.min(930,state.x+dx));state.y=Math.max(48,Math.min(500,state.y+dy));draw()}
+document.querySelectorAll("[data-move]").forEach(b=>{let dir=b.dataset.move,dx=dir==="left"?-1:dir==="right"?1:0,dy=dir==="up"?-1:dir==="down"?1:0;let timer;const start=e=>{e.preventDefault();move(dx*10,dy*10);timer=setInterval(()=>move(dx*7,dy*7),65)},stop=()=>clearInterval(timer);b.addEventListener("pointerdown",start);["pointerup","pointerleave","pointercancel"].forEach(ev=>b.addEventListener(ev,stop))});
+$("skill1").onclick=()=>skill(0);$("skill2").onclick=()=>skill(1);$("skill3").onclick=()=>skill(2);$("ultimate").onclick=()=>skill(3);
+$("healBtn").onclick=()=>{if(state.coins>=10&&state.hp<100){state.coins-=10;state.hp=Math.min(100,state.hp+20);log("HP dipulihkan 20.");updateUI()}else log("Perlu 10 syiling dan HP belum penuh.")};
+$("questBtn").onclick=()=>log("Misi utama: kalahkan 3 raksasa. Ganjaran: XP dan syiling bagi setiap musuh.");
+$("saveBtn").onclick=save;$("resetBtn").onclick=()=>{if(confirm("Padam kemajuan Arena Heroes pada peranti ini?")){localStorage.removeItem("arenaHeroesSave");location.reload()}};
+$("soundBtn").onclick=()=>{sound=!sound;$("soundBtn").textContent=sound?"🔊 Bunyi: ON":"🔇 Bunyi: OFF"};
+$("startBtn").onclick=()=>{let n=$("playerName").value.trim();let phone=$("playerPhone").value.trim();if(!n||!phone){alert("Masukkan nama dan nombor telefon dahulu.");return}state.name=n;load();state.name=n;$("startScreen").classList.add("hidden");$("main").style.display="grid";selected=true;renderHeroes();updateUI();draw();log("Selamat datang, "+state.name+"! Pilih wira dan mulakan misi.")};
+window.addEventListener("keydown",e=>{if(!selected)return;let k=e.key.toLowerCase();if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();if(k==="w"||k==="arrowup")move(0,-12);if(k==="s"||k==="arrowdown")move(0,12);if(k==="a"||k==="arrowleft")move(-12,0);if(k==="d"||k==="arrowright")move(12,0);if(k===" ")attack(12,"Serangan biasa");if(k==="1")skill(0);if(k==="2")skill(1);if(k==="3")skill(2);if(k==="4")skill(3)});
+setInterval(()=>{if(!selected)return;state.energy=Math.min(100,state.energy+2);state.monsters.forEach(m=>{let d=Math.hypot(state.x-m.x,state.y-m.y);if(d>35){m.x+=(state.x-m.x)/d*.7;m.y+=(state.y-m.y)/d*.7}else if(Math.random()<.04){state.hp=Math.max(0,state.hp-4);log("Raksasa menyerang! -4 HP.");if(state.hp===0){state.hp=50;state.x=480;state.y=270;log("Wira tumbang dan kembali ke pusat arena dengan 50 HP.")}}});updateUI();draw()},700);
+})();
+</script></body></html>
